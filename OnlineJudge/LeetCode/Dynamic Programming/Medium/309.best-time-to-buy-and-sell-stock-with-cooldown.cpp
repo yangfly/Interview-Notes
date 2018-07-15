@@ -35,6 +35,13 @@
 class Solution {
 public:
     int maxProfit(vector<int>& prices) {
-        
+       int pre_buy, buy(INT_MIN);  // #include <limits.h>
+        int pre_sell(0), sell(0);
+        for (int i = 0; i < prices.size(); i++) {
+            pre_buy = buy;
+            buy = max(pre_buy, pre_sell - prices[i]);
+            pre_sell = sell;
+            sell = max(pre_sell, pre_buy + prices[i]);
+        } 
     }
 };
