@@ -31,7 +31,7 @@
  * Example 2:
  * 
  * 
- * Input: v
+ * Input: [1,2,3,4,5]
  * Output: 4
  * Explanation: Buy on day 1 (price = 1) and sell on day 5 (price = 5), profit
  * = 5-1 = 4.
@@ -57,37 +57,37 @@ static const auto ________ = []() {
 
 class Solution {
 public:
-    int getOne(vector<int>& profits, int start, int end) {
-        int profit = 0;
-        for (int i = start; i < end; i++) {
-            profit = max(profit, profits[i]);
+    int headProfit(int n, const vector<int>& deals, int start) {
+        // for all increasing positive accumulated profit
+        int pre = 0; // accumlated head profit
+        int sum = 0; // head sum
+        int mam = 0; // maximum profit
+        for (int i = start; i < deals.size(); i++) {
+            sum += deals[i];
+            if (sum > pre) {
+                mam = max(mam, sum + getProfit(n-1, deals, i+1));
+                pre = sum;
+            }
         }
-        return profit;
+        return mam;
     }
 
-    int getTwo(vector<int>& profits, int start, int end) {
-        int i = 0;
-        for (i = start; i < end; i++) {
-            if (profits[i] > 0)
-                break;
-        }
-        if (i == end)
-            return 0;
-        else {
-            int profit = profits[i];
-            for (i = i + 1; i < end; i++) {
-                if (profits[i] > 0)
-                    break;
-            }
-            if (i == end)
-                return profit;
-            else
-                return max(profit + getOne(profits, i, end), getTwo(profits, i, end));
-        }
+    int getProfit(int n, const vector<int>& deals, int start) {
+        if (n == 0) return 0;
+
+        // find first positive deal
+        int i = start;
+        for (; i < deals.size(); i++)
+            if (deals[i] > 0) break;
+
+        // no positive deal
+        if (i == deals.size()) return 0;
+
+        return max(headProfit(n, deals, i), getProfit(n, deals, i+1));
     }
 
     int maxProfit(vector<int>& prices) {
-        vector<int> profits;
+        vector<int> deals;
         bool buy = true;
         if (prices.size() > 1) {
             int buyin = prices[0];
@@ -96,37 +96,13 @@ public:
                     buy = false;
                 else if (!buy && prices[i - 1] > prices[i])
                     buy = true;
-                profits.push_back(prices[i - 1] - buyin);
+                deals.push_back(prices[i - 1] - buyin);
                 buyin = prices[i - 1];
             }
             if (!buy)
-                profits.push_back(prices[prices.size() - 1] - buyin);
+                deals.push_back(prices[prices.size() - 1] - buyin);
         }
 
-        return getTwo(profits, 0, profits.size());
+        return getProfit(2, deals, 0);
     }
 };
-
-
-// getTwo = max(getAttach, getTwo(1:))
-// getAttach = for all attach_positive:
-//                 attach_positive + getOnlyOne(1:)
-
-
-// [
-//     {
-//         "key": "alt+i",
-//         "command": "leetcode.signin",
-//         "when": "editorFocus"
-//     },
-//     {
-//         "key": "alt+s",
-//         "command": "leetcode.searchProblem",
-//         "when": "editorFocus"
-//     },
-//     {
-//         "key": "alt+t",
-//         "command": "leetcode.testSolution",
-//         "when": "editorFocus"
-//     }
-// ]
