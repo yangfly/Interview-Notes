@@ -60,35 +60,39 @@ public:
     }
 };
 
+
+static const auto ______ = []() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    return nullptr;
+}();
+
 class Solution {
 public:
     vector<vector<int>> threeSum(vector<int>& nums) {
-		size_t n = nums.size();
-		if (n < 3)
-			return result;
-        vector<vector<int>> result;
-		std::sort(nums.begin(), nums.end());
-		int target = 0;
-        std::vector<int> q(3);
-        for(size_t i=0; i + 2 < n; ++i) {
-            if (i && nums[i-1] == nums[i]) continue;
-            if (nums[i] > target) break;
-            int v= target - nums[i];        
-            size_t j = i + 1, k = n - 1;
-            while (j < k) {
-                int tmp = nums[j] + nums[k];
-                if (tmp == v) {
-                    q[0] = nums[i];
-                    q[1] = nums[j];
-                    q[2] = nums[k];
-                    result.push_back(q);
-                    while (j < k && nums[j] == q[1]) ++j;
-                    while (k > j && nums[k] == q[2]) --k;
+        int n = nums.size();
+        vector<vector<int>> rst;
+        if (n < 3)
+            return rst;
+        sort(nums.begin(), nums.end());
+        for (int left = 0; left < n - 2; left++) {
+            if (left && nums[left] == nums[left-1]) continue;
+            if (nums[left] > 0) break;
+            int mid = left + 1, right = n - 1;
+            while (mid < right) {
+                int sum = nums[left] + nums[mid] + nums[right];
+                if (sum == 0) {
+                    vector<int> triplet = {nums[left], nums[mid], nums[right]};
+                    rst.push_back(triplet);
+                    while(nums[++mid] == triplet[1] && mid < right);
+                    while(nums[--right] == triplet[2] && mid < right);
                 }
-                else if (tmp < v) ++j;
-                else --k;
+                else if (sum < 0)
+                    mid++;
+                else
+                    right--;
             }
-        } 
-        return result;
+        }
+        return rst;
     }
 };
