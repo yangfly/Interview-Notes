@@ -55,12 +55,64 @@ public:
         qsort(right + 1, end);
     }
 
-    // BFPRT算法：平均O(logn),最坏O(n)
-    // https://subetter.com/articles/2018/03/bfprt-algorithm.html
+    // BFPRT算法：中位数的中位数。平均O(logn),最坏O(n)
+    // 1.选择主元：分(n/5)组，插入排序求中位数。递归求中位数的中位数。
+    // 2.以中位数为分界点，类似于qsort中partition
+    // 3.判断主元的位置与k的大小关系，选择对左边或者右边递归。
     int manacher(string& s, bool verbose=false)
     {
         // Todo
         return 0;
+    }
+
+    int insert_sort(vector<int>& nums, int start, int end)
+    {
+        for (int i = start + 1; i < end; i++)
+        {
+            int j, temp = nums[i];
+            for (j = i; j > 0 && nums[j-1] > temp; j--)
+                nums[j] = nums[j-1];
+            nums[j] = temp;
+        }
+        return start + ((end - start) >> 1);
+    }
+
+    int get_pivot_index(vector<int>& nums, int start, int end)
+    {
+        if (end - start < 5)
+            return insert_sort(nums, start, end);
+        // 每5个为一组，求出中位数，并将这些中位数全部交换到数组左边
+        int index = start;
+        for (int i = start; i + 5 <= end; i++)
+        {
+            int m = insert_sort(nums, i, i + 4);
+            swap(nums[index++], nums[m]);
+        }
+        return BFPRT(nums, start, end, (index - start) >> 1);
+    }
+
+    int partition(vector<int>& nums, int start, int end, int pivot_index)
+    {
+        swap(nums[pivot_index], nums[end]);
+        int mid = start;
+        for (int i = start; i < end; i++)
+            if (nums[i] < nums[end])
+                swap(nums[i], nums[mid]);
+        swap(nums[mid], nums[end]);
+        return mid;
+    }
+
+    int BFPRT(vector<int>& nums, int start, int end, int k)
+    {
+        int pivot_index = get_pivot_index(nums, start, end);
+        int mid = partition(nums, start, end, pivot_index);
+        int rank = mid - start + 1;
+        if (rank == k)
+            return mid;
+        else if (rank > k)
+            return BFPRT(nums, start, mid, k);
+        else
+            return BFPRT(nums, mid+1, end, k-rank);
     }
 
     void print(vector<int> next)
