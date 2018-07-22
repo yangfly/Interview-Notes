@@ -17,52 +17,33 @@ class Solution {
 public:
     // 基于排序：先排序。
     // 时间复杂度：O(nlogn)
-    int stl_topk(vector<int>& nums, int k)
+    int stl_topk(vector<int> nums, int k)
     {   
         sort(nums.begin(), nums.end());
-        return nums[nums.size() - k];
+        return nums[k - 1];
     }
 
     // 时间复杂度：O(nlogn)
-    int naive_topk(vector<int>& nums, int k)
+    int naive_topk(vector<int> nums, int k)
     {
         Solution::qsort(nums.begin(), nums.end());
-        return nums[nums.size() - k];
+        return nums[k - 1];
     }
 
     static void qsort(vector<int>::iterator start, vector<int>::iterator end)
     {
         if (end - start < 2) return;
-        vector<int>::iterator left(start), right(end);
-        int temp = *left;
+        vector<int>::iterator left(start), right(end-1);
+        int key = *left;
         while (left < right) {
-            while (left < right) {
-                if (*left > *right) {
-                    *left = *right;
-                    break;
-                }
-                right--;
-            }
-            while (left < right) {
-                if (*left > *right) {
-                    *right = *left;
-                    break;
-                }
-                left++;
-            }
+            while (left < right && *right >= key) right--;
+            *left = *right;
+            while (left < right && *left <= key) left++;
+            *right = *left;
         }
-        qsort(start, left - 1);
+        *left = key;
+        qsort(start, left);
         qsort(right + 1, end);
-    }
-
-    // BFPRT算法：中位数的中位数。平均O(logn),最坏O(n)
-    // 1.选择主元：分(n/5)组，插入排序求中位数。递归求中位数的中位数。
-    // 2.以中位数为分界点，类似于qsort中partition
-    // 3.判断主元的位置与k的大小关系，选择对左边或者右边递归。
-    int manacher(string& s, bool verbose=false)
-    {
-        // Todo
-        return 0;
     }
 
     int insert_sort(vector<int>& nums, int start, int end)
@@ -70,7 +51,7 @@ public:
         for (int i = start + 1; i < end; i++)
         {
             int j, temp = nums[i];
-            for (j = i; j > 0 && nums[j-1] > temp; j--)
+            for (j = i; j > start && nums[j-1] > temp; j--)
                 nums[j] = nums[j-1];
             nums[j] = temp;
         }
@@ -83,26 +64,35 @@ public:
             return insert_sort(nums, start, end);
         // 每5个为一组，求出中位数，并将这些中位数全部交换到数组左边
         int index = start;
-        for (int i = start; i + 5 <= end; i++)
+        for (int i = start; i + 5 <= end; i += 5)
         {
-            int m = insert_sort(nums, i, i + 4);
+            int m = insert_sort(nums, i, i + 5);
             swap(nums[index++], nums[m]);
         }
-        return BFPRT(nums, start, end, (index - start) >> 1);
+        return BFPRT(nums, start, index, ((index - start) >> 1) + 1);
     }
 
     int partition(vector<int>& nums, int start, int end, int pivot_index)
     {
-        swap(nums[pivot_index], nums[end]);
-        int mid = start;
-        for (int i = start; i < end; i++)
-            if (nums[i] < nums[end])
-                swap(nums[i], nums[mid]);
-        swap(nums[mid], nums[end]);
-        return mid;
+        int key = nums[pivot_index];
+        nums[pivot_index] = nums[start]; // move pivot to start
+        end--; // make sure nums[end] valid
+        while (start < end) 
+        {
+            while (start < end && nums[end] >= key) end--;
+            nums[start] = nums[end];
+            while (start < end && nums[start] <= key) start++;
+            nums[end] = nums[start];
+        }
+        nums[start] = key;
+        return start;
     }
 
-    int BFPRT(vector<int>& nums, int start, int end, int k)
+    // BFPRT算法：中位数的中位数。平均O(logn),最坏O(n)
+    // 1.选择主元：分(n/5)组，插入排序求中位数。递归求中位数的中位数。
+    // 2.以中位数为分界点，类似于qsort中partition
+    // 3.判断主元的位置与k的大小关系，选择对左边或者右边递归。
+    int BFPRT(vector<int> nums, int start, int end, int k)
     {
         int pivot_index = get_pivot_index(nums, start, end);
         int mid = partition(nums, start, end, pivot_index);
@@ -112,9 +102,41 @@ public:
         else if (rank > k)
             return BFPRT(nums, start, mid, k);
         else
-            return BFPRT(nums, mid+1, end, k-rank);
+            return BFPRT(nums, mid + 1, end, k-rank);
     }
 
+    // binary search
+    // 最好O(logn),最坏O(n)
+    int bis_topk(vector<int> nums, int k)
+    {
+        int start = 0, end = nums.size();
+        k--;
+        while (start < end) {
+            int index = partition(nums, start, end);
+            if (index == k)
+                return nums[index];
+            else if (index > k)
+                end = index;
+            else
+                start = index + 1;
+        }
+        return -1;
+    }
+
+    int partition(vector<int>& nums, int start, int end)
+    {
+        int key = nums[start];
+        end--;
+        while (start < end) {
+            while (start < end && nums[end] >= key) end--;
+            nums[start] = nums[end];
+            while (start < end && nums[start] <= key) start++;
+            nums[end] = nums[start]; 
+        }
+        nums[start] = key;
+        return start;
+    }
+    
     void print(vector<int> next)
     {
         for (int n : next)
@@ -132,12 +154,13 @@ public:
 
 int main() {
     Solution so;
-    vector<string> strs = {"abcd", "ababa", "abccb"};
-    for (string& s : strs)
-        cout << so.pure_search(s) << " "
-             << so.bi_search(s)   << " "
-             << so.manacher(s)    << endl;
-    so.manacher(strs[2], true);
+    vector<int> nums = {11,9,10,1,13,8,15,0,16,2,17,5,14,3,6,18,12,7,19,4};
+    cout << so.naive_topk(nums, 8) << endl;
+    cout << so.stl_topk(nums, 8) << endl;
+    cout << so.BFPRT(nums, 0, nums.size(), 8) << endl;
+    cout << so.bis_topk(nums, 8) << endl;
+    so.qsort(nums.begin(), nums.end());
+    so.print(nums);
     return 0;
 }
 
