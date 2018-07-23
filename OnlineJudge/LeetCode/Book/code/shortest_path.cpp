@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
-#include <limits>
+#include <queue>
+#include <limits.h>
 using namespace std;
 
 static const auto ______ = []() {
@@ -15,18 +16,24 @@ static const auto ______ = []() {
 
 class Solution {
 public:
+    struct Edge {
+        int u, v, w;
+        Edge(int u, int v, int w) :
+            u(u), v(v), w(w) {}
+    };
+
     // ************* 单源点最短路径 *************
 
     // Dijkstra算法 贪心 时间复杂度O(n^2)
     // 内存：mat结点距离临接矩阵，dist最短路程，visited结束标记
     //      * path记录最短路径
-    // 缺点：效率低，空间占用大。
-    void dijkstra(int n, int s, vector<vector<int>> & edges) 
+    // 缺点：效率低，空间占用大;对负权回路失效。
+    void dijkstra(int n, int s, vector<Edge> & edges) 
     {
         // 使用邻接矩阵存储
         vector<vector<int>> mat(n, vector<int>(n, INT_MAX));
-        for (auto edge : edges)
-            mat[edge[0]][edge[1]] = edge[2];
+        for (auto & edge : edges)
+            mat[edge.u][edge.v] = edge.w;
         vector<int> dist(n); // 源点到顶点i的最短路程
         for (int i = 0; i < n; i++)
             dist[i] = mat[s][i];
@@ -51,37 +58,115 @@ public:
                 }
             }
         }
-    }
 
-    // 纯暴力：便历字串前后索引，判断是否回文。
-    // 时间复杂度：O(n^3)
-    int pure_search(string& s)
-    {   
-        // Todo
-        return 0;
-    }
+        print(s, dist, path);
+    } 
 
-    // 暴力: 遍历字符串，以每个字符为中心向两边查找。
-    // 时间复杂度：O(n^2)
-    int bi_search(string& s)
+    // Bellman_Ford算法 时间复杂度O(mn) 可以检查负回路
+    // 内存：dist最短路程，path记录最短路径
+    // 缺点：效率低。
+    void bellman_ford(int n, int s, vector<Edge> & edges) 
     {
-        // Todo
-        return 0;
+        vector<int> dist(n, INT_MAX); // 源点到顶点i的最短路程
+        dist[s] = 0;
+        vector<int> path(n, s); // 记录最短路径
+        // 循环 n-1 次求最短路径
+        for (int i = 0; i < n; i++)
+            for (auto & edge : edges) {
+                // cout << dist[edge[1]] << " " << dist[edge[0]] + edge[2] << endl;
+                if (dist[edge.v] > dist[edge.u] + edge.w)
+                {
+                    // cout << "in" << endl;
+                    dist[edge.v] = dist[edge.u] + edge.w;
+                    path[edge.v] = edge.u;
+                }
+            }
+
+        bool flag = true; // 标记负回路
+        // 第 n 次 循环检查负权回路
+        for (auto & edge : edges)
+            if (dist[edge.v] > dist[edge.u] + edge.w)
+            {
+                flag = false;
+                break;
+            }
+
+        if (flag)
+            print(s, dist, path);
+        else
+            cout << "存在负权回路!\n" << endl;
     }
 
-    // 马拉车算法：O(n)
-    // 第一步，在各字符间填充一个额外字符如'#'，将奇回文和偶回文统一为奇回文。
-    // 动规计算扩充串的最长回文半径p，则原串的最长回文长度p[i]-1的最大值。
-    int manacher(string& s, bool verbose=false)
+    // SPFA算法 (Shortest Path Faster Algorithm) 可以检查负回路
+    // 用队列记录待优化的“后”结点。
+    // 内存：mat结点距离临接矩阵，dist最短路程，path记录最短路径
+    //      * Q存储待优化队列，inqueue标记v是否在优化队列中。
+    // 缺点：运行时间非常不稳定，容易被坏数据卡
+    void SPFA(int n, int s, vector<Edge> & edges)
     {
-        // Todo
-        return 0;
-    }
+        // 使用邻接矩阵存储
+        vector<vector<int>> mat(n, vector<int>(n, INT_MAX));
+        for (auto & edge : edges)
+            mat[edge.u][edge.v] = edge.w;
+        vector<int> dist(n); // 源点到顶点i的最短路程
+        for (int i = 0; i < n; i++)
+            dist[i] = mat[s][i];
+        vector<bool> inqueue(n, false); // 求解结束标记数组
+        vector<int> path(n, s); // 记录最短路径
+        vector<int> enter_num(n, 0); // 记录入队次数
+        bool flag = true; // 标记负回路
+        
+        queue<int> Q; // 待优化队列
+        Q.push(s);
+        inqueue[s] = true;
+        dist[s] = 0;
+        enter_num[s]++;
 
-    void print(vector<int> next)
+        while (!Q.empty()) {
+            int u = Q.front();
+            Q.pop();
+            inqueue[u] = false;
+            for (int v = 0; v < n; v++) {
+                if (mat[u][v] < INT_MAX) { // 直接邻接
+                    if (dist[u] + mat[u][v] < dist[v]) {
+                        dist[v] = dist[u] + mat[u][v];
+                        path[v] = u;
+                    }
+                    if (!inqueue[v]) {
+                        Q.push(v);
+                        enter_num[v]++;
+                        if (enter_num[v] >= n) {
+                            flag = false;
+                            break;
+                        }
+                        inqueue[v] = true;
+                    }
+                }
+            }
+            if (!flag)
+                break;
+        }
+
+        if (flag)
+            print(s, dist, path);
+        else
+            cout << "存在负权回路!\n" << endl;
+    } 
+
+    void print(int s, vector<int>& dist, vector<int>& path)
     {
-        for (int n : next)
-            cout << n << " ";
+        for (int i = 0; i < dist.size(); i++)
+            if (i != s && dist[i] < INT_MAX)
+            {
+                cout << s << "-->" << i << " : " << dist[i]
+                     << " (" << i;
+                int t = path[i];
+                while (t != s) {
+                    cout << " <- " << t;
+                    t = path[t];
+                }
+                cout << " <- " << s << ")" << endl;
+            }
         cout << endl;
     }
 
@@ -95,12 +180,33 @@ public:
 
 int main() {
     Solution so;
-    vector<string> strs = {"abcd", "ababa", "abccb"};
-    for (string& s : strs)
-        cout << so.pure_search(s) << " "
-             << so.bi_search(s)   << " "
-             << so.manacher(s)    << endl;
-    so.manacher(strs[2], true);
+    // 无负权回路图
+    vector<Solution::Edge> edges1;
+    edges1.emplace_back(0, 1, 3);
+    edges1.emplace_back(0, 2, 1);
+    edges1.emplace_back(0, 3, 2);
+    edges1.emplace_back(1, 3, 3);
+    edges1.emplace_back(2, 3, 2);
+    edges1.emplace_back(3, 4, 3);
+    edges1.emplace_back(2, 4, 3);
+    // 有负权回路图
+    vector<Solution::Edge> edges2;
+    edges2.emplace_back(0, 1, 20);
+    edges2.emplace_back(0, 2, 5);
+    edges2.emplace_back(3, 0, -200);
+    edges2.emplace_back(1, 3, 4);
+    edges2.emplace_back(3, 1, 4);
+    edges2.emplace_back(2, 3, 2);
+
+    // 测试
+
+    so.dijkstra(5, 0, edges1);
+
+    so.bellman_ford(5, 0, edges1);
+    so.bellman_ford(4, 0, edges2);
+
+    so.SPFA(5, 0, edges1);
+    so.SPFA(4, 0, edges2);
     return 0;
 }
 
