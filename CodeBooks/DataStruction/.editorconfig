@@ -1,0 +1,10 @@
+# http://editorconfig.org
+root = true
+
+[*.cpp]
+trim_trailing_whitespace = false
+
+[*.md]
+trim_trailing_whitespace = false
+indent_style = space
+indent_size = 2

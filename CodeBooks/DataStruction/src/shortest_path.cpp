@@ -43,10 +43,12 @@ public:
         for (int i = 1; i < n; i++)
         { // 找到源点到i个点的最短路径
             // 标记最近的点
-            int min_index = INT_MAX;
+            int min_index, min_cost = INT_MAX;
             for (int j = 0; j < n; j++)
-                if (!visited[j] && dist[j] < dist[min_index])
+                if (!visited[j] && dist[j] < min_cost) {
                     min_index = j;
+                    min_cost = dist[j];
+                }
             visited[min_index] = true;
             // 更新dist数组
             for (int j = 0; j < n; j++) {
